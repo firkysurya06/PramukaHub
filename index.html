@@ -64,6 +64,43 @@
 </head>
 <body class="font-sans text-gray-800 h-screen flex overflow-hidden">
 
+    <!-- VIEW: LOGIN PAGE (NEW) -->
+    <div id="login-page" class="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-scout-dark flex items-center justify-center z-[100] transition-opacity duration-500 hidden">
+        <div class="bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md relative overflow-hidden border border-white/20 mx-4">
+            <!-- Decorative blur elements -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-scout-accent/20 rounded-full -mr-10 -mt-10 blur-xl"></div>
+            <div class="absolute bottom-0 left-0 w-32 h-32 bg-scout-green/20 rounded-full -ml-10 -mb-10 blur-xl"></div>
+            
+            <div class="text-center mb-8 relative z-10">
+                <div class="w-20 h-20 bg-scout-main text-white rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-lg border-4 border-scout-light/30">
+                    <i class="fa-solid fa-campground"></i>
+                </div>
+                <h2 class="text-3xl font-heading font-bold text-scout-dark">PramukaHub</h2>
+                <p class="text-scout-main font-medium text-sm mt-1 tracking-wide">EKOSISTEM DIGITAL PENEGAK</p>
+            </div>
+            
+            <form id="login-form" class="space-y-5 relative z-10" onsubmit="event.preventDefault(); processLogin();">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-user absolute left-4 top-3.5 text-gray-400"></i>
+                        <input type="text" id="login-nama" required class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-scout-main focus:border-scout-main outline-none transition" placeholder="Ketik nama kakak...">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Ambalan</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-users absolute left-4 top-3.5 text-gray-400"></i>
+                        <input type="text" id="login-ambalan" required class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-scout-main focus:border-scout-main outline-none transition" value="KUMAJAYA-KUMARATIH">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-scout-main text-white py-3.5 rounded-xl font-bold hover:bg-scout-dark transition shadow-lg mt-6 flex justify-center items-center gap-2 group">
+                    Masuk ke Dashboard <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Sidebar Mobile Overlay -->
     <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
 
@@ -101,8 +138,13 @@
             </button>
         </nav>
         
-        <div class="p-4 text-xs text-center text-white/50 border-t border-white/10">
-            Satyaku Kudarmakan, Darmaku Kubaktikan.
+        <div class="p-4 border-t border-white/10 space-y-3">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/40 transition text-sm font-medium">
+                <i class="fa-solid fa-right-from-bracket"></i> Keluar / Ganti Akun
+            </button>
+            <div class="text-xs text-center text-white/50">
+                Satyaku Kudarmakan, Darmaku Kubaktikan.
+            </div>
         </div>
     </aside>
 
@@ -506,7 +548,8 @@
 
         // APP STATE
         const defaultState = {
-            name: "Calon Bantara",
+            isLoggedIn: false,
+            name: "",
             ambalan: "KUMAJAYA-KUMARATIH",
             skuProgress: {}, // format: { 1: "selesai", 2: "proses" }
             badges: [], // array of badge names unlocked
@@ -518,6 +561,54 @@
             localStorage.setItem('scoutmate_state', JSON.stringify(state));
             updateDashboard();
         }
+
+        // --- NEW: LOGIN LOGIC ---
+        function processLogin() {
+            const nama = document.getElementById('login-nama').value.trim();
+            const ambalan = document.getElementById('login-ambalan').value.trim();
+            
+            if(nama && ambalan) {
+                state.name = nama;
+                state.ambalan = ambalan;
+                state.isLoggedIn = true;
+                saveState();
+                
+                const loginPage = document.getElementById('login-page');
+                loginPage.classList.add('opacity-0');
+                
+                setTimeout(() => {
+                    loginPage.classList.add('hidden');
+                    initUI();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Selamat Datang!',
+                        text: `Salam Pramuka, Kak ${state.name}!`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }, 500);
+            }
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'Yakin ingin keluar?',
+                text: "Progres akan tetap tersimpan di browser perangkat ini.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#8B5A2B',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    state.isLoggedIn = false;
+                    saveState();
+                    location.reload(); // Reload halaman untuk memunculkan login kembali
+                }
+            });
+        }
+        // ------------------------
 
         async function editProfile() {
             const { value: formValues } = await Swal.fire({
@@ -1001,18 +1092,22 @@
 
         // INIT
         function initUI() {
-            updateDashboard();
-            if(!state.name || state.name === "Calon Bantara") {
-                // First time visit
-                setTimeout(() => {
-                    Swal.fire({
-                        title: 'Selamat Datang di PramukaHub!',
-                        text: 'Mari persiapkan dirimu menjadi Penegak Bantara. Silakan isi namamu terlebih dahulu.',
-                        icon: 'info',
-                        confirmButtonColor: '#8B5A2B'
-                    }).then(editProfile);
-                }, 500);
+            if (!state.isLoggedIn) {
+                // Tampilkan halaman login jika belum login
+                const loginPage = document.getElementById('login-page');
+                loginPage.classList.remove('hidden');
+                loginPage.classList.remove('opacity-0');
+                
+                // Isi input form dengan data yang ada (jika sebelumnya pernah login namun status false)
+                if (state.name) document.getElementById('login-nama').value = state.name;
+                if (state.ambalan) document.getElementById('login-ambalan').value = state.ambalan;
+                
+                return; // Hentikan inisialisasi UI dashboard sampai pengguna login
             }
+
+            // Jika sudah login, update foto profil, nama, dan dashboard
+            document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(state.name)}&background=D4A373&color=fff&size=100`;
+            updateDashboard();
         }
 
         window.onload = () => {
